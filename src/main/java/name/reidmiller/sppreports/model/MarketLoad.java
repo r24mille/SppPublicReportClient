@@ -2,7 +2,11 @@ package name.reidmiller.sppreports.model;
 
 import java.util.Date;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class MarketLoad implements Comparable<MarketLoad> {
+	private Logger logger = LogManager.getLogger(this.getClass());
 	private Date date;
 	private double currentLoad;
 	private double loadForecast;
@@ -10,8 +14,10 @@ public class MarketLoad implements Comparable<MarketLoad> {
 	@Override
 	public int compareTo(MarketLoad o) {
 		if (this.date == null && o.getDate() != null) {
+			logger.debug("null date used in MarketLoad comparison, returning 'less than'");
 			return -1;
 		} else if (this.date != null && o.getDate() == null) {
+			logger.debug("null date used in MarketLoad comparison, returning 'less than'");
 			return 1;
 		} else {
 			int dateComp = this.date.compareTo(o.getDate());

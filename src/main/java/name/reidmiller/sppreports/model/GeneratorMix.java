@@ -1,8 +1,14 @@
 package name.reidmiller.sppreports.model;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.TimeZone;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class GeneratorMix implements Comparable<GeneratorMix> {
+	private Logger logger = LogManager.getLogger(this.getClass());
 	private Date date;
 	private double coal;
 	private double hydro;
@@ -15,8 +21,10 @@ public class GeneratorMix implements Comparable<GeneratorMix> {
 	@Override
 	public int compareTo(GeneratorMix o) {
 		if (this.date == null && o.getDate() != null) {
+			logger.debug("null date used in GeneratorMix comparison, returning 'less than'");
 			return -1;
 		} else if (this.date != null && o.getDate() == null) {
+			logger.debug("null date used in GeneratorMix comparison, returning 'greater than'");
 			return 1;
 		} else {
 			int dateComp = this.date.compareTo(o.getDate());
@@ -26,6 +34,24 @@ public class GeneratorMix implements Comparable<GeneratorMix> {
 				return dateComp;
 			}
 		}
+	}
+	
+	@Override
+	public String toString() {
+		SimpleDateFormat sdf = new SimpleDateFormat("M/d/yyyy H:mm zzzz");
+		sdf.setTimeZone(TimeZone.getTimeZone("America/Chicago"));
+		
+		StringBuffer stringBuf = new StringBuffer();
+		stringBuf.append("\"GeneratorMix\": {");
+		stringBuf.append("\"date\": \"" + sdf.format(this.date) + "\", ");
+		stringBuf.append("\"coal\": " + this.coal + ", ");
+		stringBuf.append("\"hydro\": " + this.hydro + "\", ");
+		stringBuf.append("\"dieselFuelOil\": " + this.dieselFuelOil + ", ");
+		stringBuf.append("\"naturalGas\": " + this.naturalGas + ", ");
+		stringBuf.append("\"nuclear\": " + this.nuclear + ", ");
+		stringBuf.append("\"wind\": " + this.wind + ", ");
+		stringBuf.append("\"marketLoad\": " + this.marketLoad + "}");
+		return stringBuf.toString();
 	}
 
 	public Date getDate() {
