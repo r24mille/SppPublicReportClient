@@ -9,8 +9,11 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.TreeSet;
 
 import name.reidmiller.sppreports.model.GeneratorMix;
 import name.reidmiller.sppreports.model.SamplingFrequency;
@@ -34,9 +37,67 @@ public class GeneratorMixClient {
 
 	public List<GeneratorMix> getDefaultGeneratorMixes(
 			SamplingFrequency samplingFrequency) {
+		return this.getGenMixesForYear(Calendar.getInstance()
+				.get(Calendar.YEAR), samplingFrequency);
+	}
+
+	public String getUrlString(int year, SamplingFrequency samplingFrequency) {
+		String urlString = "http://www.spp.org/GenerationMix/" + year + "_"
+				+ samplingFrequency.getUrlPart() + "_GenMix.csv";
+		logger.debug("Parsing URL " + urlString);
+		return urlString;
+	}
+
+	public List<GeneratorMix> getGeneratorMixesInRange(
+			SamplingFrequency samplingFrequency, Date startDate, Date endDate) {
+		Calendar startCal = Calendar.getInstance();
+		startCal.setTime(startDate);
+		Calendar endCal = Calendar.getInstance();
+		endCal.setTime(endDate);
+
+		TreeSet<Integer> yearRange = new TreeSet<Integer>();
+		for (int y = startCal.get(Calendar.YEAR); y <= endCal
+				.get(Calendar.YEAR); y++) {
+			yearRange.add(y);
+		}
+
 		List<GeneratorMix> generatorMixes = new ArrayList<GeneratorMix>();
-		String urlString = this.getUrlString(
-				Calendar.getInstance().get(Calendar.YEAR), samplingFrequency);
+		for (int year : yearRange) {
+			List<GeneratorMix> yearGenMixes = this.getGenMixesForYear(year,
+					samplingFrequency);
+
+			if (year > startCal.get(Calendar.YEAR)
+					&& year < endCal.get(Calendar.YEAR)) {
+				generatorMixes.addAll(yearGenMixes);
+			} else if (year == startCal.get(Calendar.YEAR) && year == endCal.get(Calendar.YEAR)) {
+				for (GeneratorMix genMix : yearGenMixes) {
+					if (genMix.getDate().compareTo(startDate) >= 0 && genMix.getDate().compareTo(endDate) <= 0) {
+						generatorMixes.add(genMix);
+					}
+				}
+			}
+			else if (year == startCal.get(Calendar.YEAR)) {
+				for (GeneratorMix genMix : yearGenMixes) {
+					if (genMix.getDate().compareTo(startDate) >= 0) {
+						generatorMixes.add(genMix);
+					}
+				}
+			} else if (year == endCal.get(Calendar.YEAR)) {
+				for (GeneratorMix genMix : yearGenMixes) {
+					if (genMix.getDate().compareTo(endDate) <= 0) {
+						generatorMixes.add(genMix);
+					}
+				}
+			}
+		}
+
+		return generatorMixes;
+	}
+
+	public List<GeneratorMix> getGenMixesForYear(int year,
+			SamplingFrequency samplingFrequency) {
+		List<GeneratorMix> generatorMixes = new ArrayList<GeneratorMix>();
+		String urlString = this.getUrlString(year, samplingFrequency);
 		try {
 			URL url = new URL(urlString);
 			BufferedReader in = new BufferedReader(new InputStreamReader(
@@ -45,7 +106,7 @@ public class GeneratorMixClient {
 
 			String[] csvLine = reader.readNext();
 			for (int i = 0; csvLine != null; i++) {
-				if (i > 0) {
+				if (i > 0 && csvLine[0] != null && !csvLine[0].isEmpty()) {
 					GeneratorMix generatorMix = new GeneratorMix();
 					generatorMix.setDate(genMixSimpleDateFormat
 							.parse(csvLine[0]));
@@ -73,16 +134,11 @@ public class GeneratorMixClient {
 		} catch (IOException e) {
 			logger.error(e.getMessage());
 		} catch (ParseException e) {
-			logger.error("Could not parse the date string from GeneratorMix report: "
+			logger.error("Could not parse the date string from GeneratorMix report. "
 					+ e.getMessage());
 		}
 
 		return generatorMixes;
-	}
-
-	public String getUrlString(int year, SamplingFrequency samplingFrequency) {
-		return "http://www.spp.org/GenerationMix/" + year + "_"
-				+ samplingFrequency.getUrlPart() + "_GenMix.csv";
 	}
 
 }
