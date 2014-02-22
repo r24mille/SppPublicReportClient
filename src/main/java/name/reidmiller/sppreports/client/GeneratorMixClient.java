@@ -5,14 +5,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
-import java.util.TimeZone;
 import java.util.TreeSet;
 
 import name.reidmiller.sppreports.model.GeneratorMix;
@@ -20,19 +16,25 @@ import name.reidmiller.sppreports.model.SamplingFrequency;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.Duration;
+import org.joda.time.Instant;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 import au.com.bytecode.opencsv.CSVReader;
 
 public class GeneratorMixClient {
 	public static final String GENERATOR_MIX_REPORT_DATE_FORMAT = "M/d/yyyy H:mm";
 	private Logger logger = LogManager.getLogger(this.getClass());
-	private SimpleDateFormat genMixSimpleDateFormat;
+	private DateTimeFormatter dateTimeFormat;
 
 	GeneratorMixClient() {
-		this.genMixSimpleDateFormat = new SimpleDateFormat(
-				GENERATOR_MIX_REPORT_DATE_FORMAT);
-		this.genMixSimpleDateFormat.setTimeZone(TimeZone
-				.getTimeZone("America/Chicago"));
+		DateTimeFormatter localDateTimeFormat = DateTimeFormat
+				.forPattern(GENERATOR_MIX_REPORT_DATE_FORMAT);
+		this.dateTimeFormat = localDateTimeFormat.withZone(DateTimeZone
+				.forID("America/Chicago"));
 	}
 
 	public List<GeneratorMix> getDefaultGeneratorMixes(
@@ -69,14 +71,15 @@ public class GeneratorMixClient {
 			if (year > startCal.get(Calendar.YEAR)
 					&& year < endCal.get(Calendar.YEAR)) {
 				generatorMixes.addAll(yearGenMixes);
-			} else if (year == startCal.get(Calendar.YEAR) && year == endCal.get(Calendar.YEAR)) {
+			} else if (year == startCal.get(Calendar.YEAR)
+					&& year == endCal.get(Calendar.YEAR)) {
 				for (GeneratorMix genMix : yearGenMixes) {
-					if (genMix.getDate().compareTo(startDate) >= 0 && genMix.getDate().compareTo(endDate) <= 0) {
+					if (genMix.getDate().compareTo(startDate) >= 0
+							&& genMix.getDate().compareTo(endDate) <= 0) {
 						generatorMixes.add(genMix);
 					}
 				}
-			}
-			else if (year == startCal.get(Calendar.YEAR)) {
+			} else if (year == startCal.get(Calendar.YEAR)) {
 				for (GeneratorMix genMix : yearGenMixes) {
 					if (genMix.getDate().compareTo(startDate) >= 0) {
 						generatorMixes.add(genMix);
@@ -96,6 +99,26 @@ public class GeneratorMixClient {
 
 	public List<GeneratorMix> getGenMixesForYear(int year,
 			SamplingFrequency samplingFrequency) {
+		DateTimeZone usCentral = DateTimeZone.forID("America/Chicago");		
+		DateTime august1st = new DateTime(year, 8, 1, 0, 0, 0, 0, usCentral);
+		Instant cdtToCst = new Instant(usCentral.nextTransition(august1st
+				.toInstant().getMillis()));
+		Instant lastCdt = null;
+		boolean startCstFix = false;
+		int numCstFixed = 0;
+		int cstFixLimit = 0;
+		switch (samplingFrequency) {
+		case FIVE_MINUTES:
+			lastCdt = cdtToCst.minus(Duration.standardMinutes(5));
+			cstFixLimit = 12;
+			break;
+		case HOURLY:
+			lastCdt = cdtToCst.minus(Duration.standardHours(1));
+			cstFixLimit = 1;
+			break;
+		}
+		logger.debug("Last sample of CDT is " + lastCdt.toDateTime(usCentral));
+
 		List<GeneratorMix> generatorMixes = new ArrayList<GeneratorMix>();
 		String urlString = this.getUrlString(year, samplingFrequency);
 		try {
@@ -108,8 +131,24 @@ public class GeneratorMixClient {
 			for (int i = 0; csvLine != null; i++) {
 				if (i > 0 && csvLine[0] != null && !csvLine[0].isEmpty()) {
 					GeneratorMix generatorMix = new GeneratorMix();
-					generatorMix.setDate(genMixSimpleDateFormat
-							.parse(csvLine[0]));
+					DateTime genMixDateTime = dateTimeFormat
+							.parseDateTime(csvLine[0]);
+
+					if (startCstFix && numCstFixed < cstFixLimit) {
+						Instant incorrectCst = genMixDateTime.toInstant();
+						Instant correctCdt = incorrectCst.plus(Duration.standardHours(1));
+						logger.debug("Incorrect Date " + incorrectCst.toDateTime(usCentral) + " corrected to " + correctCdt.toDateTime(usCentral));
+						generatorMix.setDate(correctCdt.toDate());
+						numCstFixed++;
+					} else {
+						generatorMix.setDate(genMixDateTime.toDate());
+						startCstFix = false;
+					}
+					
+					if (genMixDateTime.isEqual(lastCdt)) {
+						startCstFix = true;
+					}
+
 					generatorMix.setCoal(Double.parseDouble(csvLine[1]));
 					generatorMix.setHydro(Double.parseDouble(csvLine[2]));
 					generatorMix.setDieselFuelOil(Double
@@ -133,12 +172,8 @@ public class GeneratorMixClient {
 					+ urlString + "\"");
 		} catch (IOException e) {
 			logger.error(e.getMessage());
-		} catch (ParseException e) {
-			logger.error("Could not parse the date string from GeneratorMix report. "
-					+ e.getMessage());
 		}
 
 		return generatorMixes;
 	}
-
 }
