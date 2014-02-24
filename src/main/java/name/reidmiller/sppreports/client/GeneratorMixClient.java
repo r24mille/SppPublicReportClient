@@ -26,19 +26,18 @@ import au.com.bytecode.opencsv.CSVReader;
 
 public class GeneratorMixClient {
 	public static final String GENERATOR_MIX_REPORT_DATE_FORMAT = "M/d/yyyy H:mm";
+	public static final DateTimeZone US_CENTRAL_ZONE = DateTimeZone.forID("America/Chicago");
 	private Logger logger = LogManager.getLogger(this.getClass());
 	private DateTimeFormatter centralTimeFormat;
-	private DateTimeZone usCentralZone;
 
 	/**
 	 * GeneratorMixClient constructor sets {@link #centralTimeFormat} using
-	 * {@value #GENERATOR_MIX_REPORT_DATE_FORMAT} and {@link #usCentralZone}.
+	 * {@value #GENERATOR_MIX_REPORT_DATE_FORMAT} and {@link #US_CENTRAL_ZONE}.
 	 */
 	GeneratorMixClient() {
-		usCentralZone = DateTimeZone.forID("America/Chicago");
 		DateTimeFormatter localDateTimeFormat = DateTimeFormat
 				.forPattern(GENERATOR_MIX_REPORT_DATE_FORMAT);
-		this.centralTimeFormat = localDateTimeFormat.withZone(usCentralZone);
+		this.centralTimeFormat = localDateTimeFormat.withZone(US_CENTRAL_ZONE);
 	}
 
 	/**
@@ -145,9 +144,9 @@ public class GeneratorMixClient {
 	public List<GeneratorMix> getGenMixesForYear(int year,
 			SamplingFrequency samplingFrequency) {
 		// An arbitrary date known to be in the middle of daylight savings.
-		DateTime august1st = new DateTime(year, 8, 1, 0, 0, 0, 0, usCentralZone);
+		DateTime august1st = new DateTime(year, 8, 1, 0, 0, 0, 0, US_CENTRAL_ZONE);
 		// Instant of transition from daylight savings to standard time.
-		Instant cdtToCst = new Instant(usCentralZone.nextTransition(august1st
+		Instant cdtToCst = new Instant(US_CENTRAL_ZONE.nextTransition(august1st
 				.toInstant().getMillis()));
 		// Instant of last daylight savings sample in the report.
 		Instant lastCdt = null;
@@ -167,7 +166,7 @@ public class GeneratorMixClient {
 			break;
 		}
 		logger.debug("Last sample of CDT is "
-				+ lastCdt.toDateTime(usCentralZone));
+				+ lastCdt.toDateTime(US_CENTRAL_ZONE));
 
 		List<GeneratorMix> generatorMixes = new ArrayList<GeneratorMix>();
 		String urlString = this.getUrlString(year, samplingFrequency);
@@ -192,9 +191,9 @@ public class GeneratorMixClient {
 						Instant correctCdt = incorrectCst.plus(Duration
 								.standardHours(1));
 						logger.debug("Incorrect Date "
-								+ incorrectCst.toDateTime(usCentralZone)
+								+ incorrectCst.toDateTime(US_CENTRAL_ZONE)
 								+ " corrected to "
-								+ correctCdt.toDateTime(usCentralZone));
+								+ correctCdt.toDateTime(US_CENTRAL_ZONE));
 						generatorMix.setDate(correctCdt.toDate());
 						numCstFixed++;
 					} else {
