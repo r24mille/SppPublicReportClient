@@ -13,9 +13,12 @@ import java.util.TreeSet;
 import name.reidmiller.sppreports.model.GeneratorMix;
 import name.reidmiller.sppreports.model.SamplingFrequency;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Test;
 
 public class GeneratorMixClientTest {
+	Logger logger = LogManager.getLogger(this.getClass());
 
 	/**
 	 * This test will work so long as it's 10 minutes into the current year.
@@ -90,6 +93,7 @@ public class GeneratorMixClientTest {
 							+ " zzzz");
 			sdf.setTimeZone(TimeZone.getTimeZone("America/Chicago"));
 
+			// Multi-year test range that runs DST correction code
 			Date startDate = sdf.parse("7/15/2012 12:34 Central Daylight Time");
 			Date endDate = sdf.parse("12/15/2013 6:00 Central Standard Time");
 
@@ -105,12 +109,12 @@ public class GeneratorMixClientTest {
 			Date cdtStart = sdf.parse("3/10/2013 3:00 Central Daylight Time");
 			Date cdtEnd = sdf.parse("11/3/2013 1:55 Central Daylight Time");
 			Date cstStart = sdf.parse("11/3/2013 1:00  Central Standard Time");
-			
-			// TODO Daylight savings error, parses 1:00-1:59 CST twice
+
+			// Array indices for debugging DST error
 			int i = 0;
 			for (GeneratorMix generatorMix : generatorMixes) {
 				if (i == 68429 || i == 136960 || i == 136961) {
-					System.out.println(i + "= " + generatorMix.toString());
+					logger.debug(i + "= " + generatorMix.toString());
 				}
 				i++;
 			}
@@ -128,6 +132,41 @@ public class GeneratorMixClientTest {
 					+ GeneratorMix.class + " list is equal to end parameter",
 					endDate, generatorMixes.get(generatorMixes.size() - 1)
 							.getDate());
+
+		} catch (ParseException e) {
+			fail("Could not parse date in unit test");
+		}
+	}
+
+	@Test
+	public void testGetHourlyMinuteGeneratorMixesInRange() {
+		try {
+			SimpleDateFormat sdf = new SimpleDateFormat(
+					GeneratorMixClient.GENERATOR_MIX_REPORT_DATE_FORMAT
+							+ " zzzz");
+			sdf.setTimeZone(TimeZone.getTimeZone("America/Chicago"));
+
+			// Same-day test range that doesn't run DST code
+			Date startDate = sdf.parse("12/1/2013 3:00 Central Standard Time");
+			Date endDate = sdf.parse("12/1/2013 20:00 Central Standard Time");
+
+			GeneratorMixClient genMixClient = new GeneratorMixClient();
+			List<GeneratorMix> generatorMixes = genMixClient
+					.getGeneratorMixesInRange(SamplingFrequency.HOURLY,
+							startDate, endDate);
+
+			assertNotNull("List of hourly " + GeneratorMix.class
+					+ " objects in specified date range is null",
+					generatorMixes);
+
+			assertEquals("First date in ranged hourly " + GeneratorMix.class
+					+ " list is not equal to the start parameter", startDate,
+					generatorMixes.get(0).getDate());
+			assertEquals("Unexpected hourly GeneratorMix list size", 18,
+					generatorMixes.size());
+			assertEquals("Last date in ranged hourly " + GeneratorMix.class
+					+ " list is equal to end parameter", endDate,
+					generatorMixes.get(generatorMixes.size() - 1).getDate());
 
 		} catch (ParseException e) {
 			fail("Could not parse date in unit test");
