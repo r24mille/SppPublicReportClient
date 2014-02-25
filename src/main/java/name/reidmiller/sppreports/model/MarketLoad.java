@@ -5,6 +5,10 @@ import java.util.Date;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Load reports provide both the observed load at a given time as well as the
+ * load forecasted for the next observation period.
+ */
 public class MarketLoad implements Comparable<MarketLoad> {
 	private Logger logger = LogManager.getLogger(this.getClass());
 	private Date date;

@@ -7,6 +7,10 @@ import java.util.TimeZone;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * The market electricity load for each timestamp and its component fuel
+ * sources.
+ */
 public class GeneratorMix implements Comparable<GeneratorMix> {
 	private Logger logger = LogManager.getLogger(this.getClass());
 	private Date date;
@@ -35,12 +39,12 @@ public class GeneratorMix implements Comparable<GeneratorMix> {
 			}
 		}
 	}
-	
+
 	@Override
 	public String toString() {
 		SimpleDateFormat sdf = new SimpleDateFormat("M/d/yyyy H:mm zzzz");
 		sdf.setTimeZone(TimeZone.getTimeZone("America/Chicago"));
-		
+
 		StringBuffer stringBuf = new StringBuffer();
 		stringBuf.append("\"GeneratorMix\": {");
 		stringBuf.append("\"date\": \"" + sdf.format(this.date) + "\", ");
