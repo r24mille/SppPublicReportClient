@@ -3,12 +3,12 @@
 	<modelVersion>4.0.0</modelVersion>
 	
 	<groupId>name.reidmiller</groupId>
-	<artifactId>SppPublicReportClient</artifactId>
+	<artifactId>spp-public-report-client</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	
-	<name>SppPublicReportClient</name>
-	<description>Java client to the Southwest Power Pool .csv reports.</description>
+	<name>SPP Public Report Client</name>
+	<description>Java client to the Southwest Power Pool (SPP) .csv reports.</description>
 	<url>https://github.com/r24mille/SppPublicReportClient</url>
 	
 	<issueManagement>
