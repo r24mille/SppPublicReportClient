@@ -34,7 +34,7 @@ public class LoadForecastClient {
 	 * MarketLoadClient constructor sets {@link #centralTimeFormat} using
 	 * {@value #GENERATOR_MIX_REPORT_DATE_FORMAT} and {@link #US_CENTRAL_ZONE}.
 	 */
-	LoadForecastClient() {
+	public LoadForecastClient() {
 		DateTimeFormatter localDateTimeFormat = DateTimeFormat
 				.forPattern(LOAD_FORECAST_REPORT_DATE_FORMAT);
 		this.centralTimeFormat = localDateTimeFormat.withZone(US_CENTRAL_ZONE);

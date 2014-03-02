@@ -34,7 +34,7 @@ public class GeneratorMixClient {
 	 * GeneratorMixClient constructor sets {@link #centralTimeFormat} using
 	 * {@value #GENERATOR_MIX_REPORT_DATE_FORMAT} and {@link #US_CENTRAL_ZONE}.
 	 */
-	GeneratorMixClient() {
+	public GeneratorMixClient() {
 		DateTimeFormatter localDateTimeFormat = DateTimeFormat
 				.forPattern(GENERATOR_MIX_REPORT_DATE_FORMAT);
 		this.centralTimeFormat = localDateTimeFormat.withZone(US_CENTRAL_ZONE);
